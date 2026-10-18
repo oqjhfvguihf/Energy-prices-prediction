@@ -38,7 +38,7 @@ df["is_non_working_day"] = ((df["is_weekend"] == 1) | (df["is_holiday"] == 1)).a
 # --- 3. Cechy opóźnione (tylko to, co znamy przed aukcją na dobę D) ---
 df["residual_demand"] = df["demand"] - df["wi"] - df["pv"]
 for col in ["demand", "wi", "pv", "swm_p", "residual_demand"]:
-    df[f"{col}_lag_24h"] = df[col].shift(24)
+    df[f"{col}_lag_48h"] = df[col].shift(48)
 
 df["price_lag_24h"] = df["csdac_pln"].shift(24)
 df["price_lag_48h"] = df["csdac_pln"].shift(48)
@@ -53,13 +53,13 @@ for stat in ["mean", "min", "max", "std"]:
     df[f"prev_day_price_{stat}"] = daily[stat].reindex(day).values
 df["prev7d_price_mean"] = prev7.reindex(day).values
 
-# --- 4. Opcjonalnie: gaz / CO2 (znamy tylko wczorajsze zamknięcie) ---
+# --- 4. Opcjonalnie: gaz / CO2 (znamy tylko zamknięcie sprzed 2 dni) ---
 for path, name in DAILY_SERIES.items():
     if not os.path.exists(path):
         continue
     s = pd.read_csv(path, parse_dates=["Data"]).drop_duplicates("Data").set_index("Data")["Zamkniecie"]
     days = pd.date_range(day.min() - pd.Timedelta(days=10), day.max(), freq="D")
-    s = s.reindex(days).ffill().shift(1)
+    s = s.reindex(days).ffill().shift(2)
     df[name] = s.reindex(day).values
     print(f"Dodano cechę {name}")
 
